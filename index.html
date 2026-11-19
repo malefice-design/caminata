@@ -133,9 +133,33 @@
   .notes { margin-top: 16px; font-size: 12px; color: var(--muted); }
   .notes p { margin: 6px 8px; }
   .notes .warn { color: var(--warn); }
-  .toast { position: fixed; z-index: 5; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff;
+  .toast { position: fixed; z-index: 5; left: 50%; bottom: 110px; transform: translateX(-50%); background: var(--ink); color: #fff;
            padding: 10px 16px; border-radius: 14px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90%; }
   .toast.show { opacity: 1; }
+
+  main { padding-bottom: 120px !important; }
+  .tabbar { position: fixed; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom));
+    width: min(92%, 420px); display: flex; padding: 6px; border-radius: 24px; }
+  .tabbar button { flex: 1; border: 0; background: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px; border-radius: 18px; cursor: pointer; }
+  .tabbar button svg { width: 22px; height: 22px; }
+  .tabbar button.on { color: var(--teal-d); background: #eef4fe; }
+  .actions button.secondary { background: #fff; color: var(--teal-d); border: 1.5px solid var(--teal); }
+  .week { padding: 14px; }
+  .hist-head { display: flex; justify-content: space-between; }
+  #hist-count { color: var(--muted); font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .entry { padding: 14px 16px; margin-bottom: 10px; }
+  .entry-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .entry-date { font-weight: 700; font-size: 14px; }
+  .entry-date small { font-weight: 500; color: var(--muted); margin-left: 6px; font-size: 12px; }
+  .entry-del { border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
+  .entry-del.confirm { background: #fdecea; color: var(--warn); font-weight: 600; }
+  .entry-vals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .entry-vals div { background: var(--glass-strong); border-radius: 12px; padding: 7px 4px; text-align: center; }
+  .entry-vals b { display: block; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .entry-vals small { font-size: 10px; color: var(--muted); }
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 13px; }
+  .row input[type=date] { font: inherit; font-size: 15px; font-weight: 600; color: var(--ink); background: #f1f5fc; border: 0; border-radius: 12px; padding: 7px 10px; }
 </style>
 
 </head>
@@ -151,6 +175,7 @@
   </header>
 
 
+  <div id="view-calc">
   <div class="segmented" id="mode">
     <button data-mode="cinta" class="on">Caminadora</button>
     <button data-mode="calle">Calle</button>
@@ -189,6 +214,9 @@
     <button id="calc" class="primary">Calcular</button>
   </div>
   <div class="actions" style="margin-top:10px">
+    <button id="save" class="secondary">Guardar en historial</button>
+  </div>
+  <div class="actions" style="margin-top:10px">
     <button id="clear">Limpiar</button>
     <button id="copy">Copiar resumen</button>
   </div>
@@ -212,7 +240,34 @@
     </div>
   </section>
   <div class="notes" id="notes"></div>
+  </div>
+
+  <div id="view-hist" hidden>
+    <h2>Últimos 7 días</h2>
+    <section class="glass week">
+      <div class="stats" id="week"></div>
+    </section>
+    <h2 class="hist-head">Historial <span id="hist-count"></span></h2>
+    <div id="hist-list"></div>
+    <div class="actions" style="margin-top:18px">
+      <button id="export">Exportar CSV</button>
+      <button id="import-btn">Importar</button>
+      <input type="file" id="import" accept=".csv,text/csv" hidden>
+    </div>
+    <p class="notes" style="margin:10px 8px 0">El historial se guarda solo en este teléfono. Exporta el CSV de vez en cuando como respaldo.</p>
+  </div>
 </main>
+
+<nav class="tabbar glass">
+  <button data-view="calc" class="on">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M8 7h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg>
+    Calcular
+  </button>
+  <button data-view="hist">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+    Historial
+  </button>
+</nav>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -468,6 +523,129 @@ function toast(msg) {
   t.textContent = msg; t.classList.add("show");
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2500);
 }
+
+// ---------- Fecha ----------
+function hoy() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+const fechaRow = document.createElement("div");
+fechaRow.className = "row";
+fechaRow.innerHTML = `<label for="in-fecha">Fecha</label><div class="field"><input type="date" id="in-fecha"></div>`;
+document.getElementById("walk").insertBefore(fechaRow, document.getElementById("walk").firstChild);
+const fechaIn = document.getElementById("in-fecha");
+fechaIn.value = hoy();
+
+// ---------- Historial ----------
+const HKEY = "caminata-historial";
+function loadHist() { try { return JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch (e) { return []; } }
+function saveHist(h) { try { localStorage.setItem(HKEY, JSON.stringify(h)); return true; } catch (e) { return false; } }
+
+document.getElementById("save").addEventListener("click", () => {
+  solve();
+  const k = lastResult;
+  if (k.tiempo == null && k.distancia == null && k.pasos == null) { toast("Faltan datos para guardar"); return; }
+  const h = loadHist();
+  h.push({
+    id: Date.now(), fecha: fechaIn.value || hoy(), modo: mode,
+    tiempo: k.tiempo ?? null, distancia: k.distancia ?? null, velocidad: k.velocidad ?? null,
+    pasos: k.pasos != null ? Math.round(k.pasos) : null, calorias: k.calorias != null ? Math.round(k.calorias) : null,
+    inclinacion: mode === "cinta" ? (k.inclinacion || 0) : null,
+  });
+  if (saveHist(h)) { toast("Guardado en el historial"); renderHist(); }
+  else toast("No se pudo guardar en este navegador");
+});
+
+const DIAS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+function fechaTxt(f) {
+  const [y, m, d] = f.split("-").map(Number); const dt = new Date(y, m - 1, d);
+  return `${DIAS[dt.getDay()]} ${d}/${m}${y !== new Date().getFullYear() ? "/" + y : ""}`;
+}
+function v(x, dec, unit) { return x == null ? "—" : fmt(x, dec) + (unit ? " " + unit : ""); }
+
+function renderHist() {
+  const h = loadHist().sort((a, b) => (b.fecha.localeCompare(a.fecha)) || (b.id - a.id));
+  document.getElementById("hist-count").textContent = h.length ? `${h.length} ${h.length === 1 ? "caminata" : "caminatas"}` : "";
+  // Semana
+  const lim = new Date(); lim.setHours(0,0,0,0); lim.setDate(lim.getDate() - 6);
+  const sem = h.filter(e => { const [y,m,d] = e.fecha.split("-").map(Number); return new Date(y, m-1, d) >= lim; });
+  const sum = key => sem.reduce((a, e) => a + (e[key] || 0), 0);
+  document.getElementById("week").innerHTML = `
+    <div class="stat"><div><small>Distancia</small><b>${fmt(sum("distancia"), 1)} km</b></div></div>
+    <div class="stat"><div><small>Pasos</small><b>${fmt(sum("pasos"), 0)}</b></div></div>
+    <div class="stat"><div><small>Calorías</small><b>${fmt(sum("calorias"), 0)}</b></div></div>`;
+  const list = document.getElementById("hist-list");
+  if (!h.length) { list.innerHTML = `<div class="glass empty">Todavía no hay caminatas guardadas.<br>Calcula una y toca “Guardar en historial”.</div>`; return; }
+  list.innerHTML = h.map(e => `
+    <div class="glass entry">
+      <div class="entry-top">
+        <span class="entry-date">${fechaTxt(e.fecha)}<small>${e.modo === "cinta" ? "Caminadora" : "Calle"}${e.inclinacion ? " · " + fmt(e.inclinacion, 1) + "%" : ""}</small></span>
+        <button class="entry-del" data-id="${e.id}">Borrar</button>
+      </div>
+      <div class="entry-vals">
+        <div><b>${v(e.tiempo, 0)}</b><small>min</small></div>
+        <div><b>${v(e.distancia, 2)}</b><small>km</small></div>
+        <div><b>${v(e.pasos, 0)}</b><small>pasos</small></div>
+        <div><b>${v(e.calorias, 0)}</b><small>kcal</small></div>
+      </div>
+    </div>`).join("");
+  list.querySelectorAll(".entry-del").forEach(b => b.addEventListener("click", () => {
+    if (!b.classList.contains("confirm")) {
+      b.classList.add("confirm"); b.textContent = "¿Borrar?";
+      setTimeout(() => { if (b.isConnected) { b.classList.remove("confirm"); b.textContent = "Borrar"; } }, 3000);
+      return;
+    }
+    saveHist(loadHist().filter(e => String(e.id) !== b.dataset.id)); renderHist();
+  }));
+}
+
+// Exportar / importar CSV
+const COLS = ["fecha", "modo", "tiempo", "distancia", "velocidad", "pasos", "calorias", "inclinacion"];
+document.getElementById("export").addEventListener("click", () => {
+  const h = loadHist().sort((a, b) => a.fecha.localeCompare(b.fecha));
+  if (!h.length) { toast("No hay datos para exportar"); return; }
+  const rows = [COLS.join(";")].concat(h.map(e => COLS.map(c => {
+    const x = e[c]; if (x == null) return "";
+    if (c === "modo") return x === "cinta" ? "caminadora" : "calle";
+    return typeof x === "number" ? String(Math.round(x * 100) / 100).replace(".", ",") : x;
+  }).join(";")));
+  const blob = new Blob(["\ufeff" + rows.join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `caminatas-${hoy()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+document.getElementById("import-btn").addEventListener("click", () => document.getElementById("import").click());
+document.getElementById("import").addEventListener("change", async ev => {
+  const file = ev.target.files[0]; if (!file) return;
+  const text = (await file.text()).replace(/^\ufeff/, "");
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const head = lines.shift().split(";").map(x => x.trim().toLowerCase());
+  const h = loadHist(); const seen = new Set(h.map(e => [e.fecha, e.tiempo, e.distancia, e.pasos].join("|")));
+  let added = 0;
+  lines.forEach((l, i) => {
+    const c = l.split(";"); const e = { id: Date.now() + i };
+    head.forEach((k, j) => {
+      const raw = (c[j] || "").trim();
+      if (k === "fecha") e.fecha = raw;
+      else if (k === "modo") e.modo = raw.startsWith("calle") ? "calle" : "cinta";
+      else if (COLS.includes(k)) e[k] = num(raw);
+    });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(e.fecha || "")) return;
+    const key = [e.fecha, e.tiempo, e.distancia, e.pasos].join("|");
+    if (seen.has(key)) return; seen.add(key); h.push(e); added++;
+  });
+  saveHist(h); renderHist(); ev.target.value = "";
+  toast(added ? `Importadas ${added} caminatas` : "No había caminatas nuevas");
+});
+
+// ---------- Pestañas ----------
+function showView(name) {
+  document.getElementById("view-calc").hidden = name !== "calc";
+  document.getElementById("view-hist").hidden = name !== "hist";
+  document.querySelectorAll(".tabbar button").forEach(b => b.classList.toggle("on", b.dataset.view === name));
+  document.querySelector(".sub").textContent = name === "calc" ? "Ingresa lo que tengas y toca Calcular" : "Tus caminatas guardadas";
+  if (name === "hist") renderHist();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
 
 setMode(mode);
 </script>
