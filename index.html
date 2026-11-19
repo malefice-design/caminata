@@ -160,6 +160,33 @@
   .entry-vals small { font-size: 10px; color: var(--muted); }
   .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 13px; }
   .row input[type=date] { font: inherit; font-size: 15px; font-weight: 600; color: var(--ink); background: #f1f5fc; border: 0; border-radius: 12px; padding: 7px 10px; }
+
+  .info-btn { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--teal); background: #fff; color: var(--teal-d);
+    font: 700 12px/1 Georgia, serif; font-style: italic; display: inline-grid; place-items: center; padding: 0; margin-left: 4px; vertical-align: 1px; cursor: pointer; }
+  .sheet-bg { position: fixed; inset: 0; z-index: 10; background: rgba(27,36,51,.35); opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .sheet-bg.open { opacity: 1; pointer-events: auto; }
+  .sheet { position: fixed; z-index: 11; left: 0; right: 0; bottom: 0; max-width: 520px; margin: 0 auto; max-height: 85vh; overflow-y: auto;
+    background: #fff; border-radius: 28px 28px 0 0; padding: 10px 22px calc(28px + env(safe-area-inset-bottom));
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.2,.8,.2,1); box-shadow: 0 -10px 40px rgba(45,95,190,.18); }
+  .sheet.open { transform: translateY(0); }
+  .sheet .grab { width: 40px; height: 5px; border-radius: 5px; background: #d8e1ee; margin: 0 auto 14px; }
+  .sheet-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .sheet h3 { font-size: 19px; margin: 0; }
+  .sheet .close { width: 32px; height: 32px; border-radius: 50%; border: 0; background: #eef3fb; color: var(--ink); font-size: 18px; cursor: pointer; }
+  .sheet h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--teal-d); margin: 20px 0 8px; }
+  .sheet p, .sheet li { font-size: 14px; color: #4a5568; margin: 0 0 8px; }
+  .sheet ol, .sheet ul { padding-left: 20px; margin: 0; }
+  .sheet .path { background: #f1f5fc; border-radius: 14px; padding: 12px 14px; font-size: 14px; font-weight: 600; color: var(--ink); }
+  .sheet .path span { color: var(--teal-d); }
+  .sheet .tip { background: #eef4fe; border-radius: 14px; padding: 12px 14px; font-size: 13px; color: var(--ink); margin-top: 14px; }
+
+  .height-calc { background: #f1f5fc; border-radius: 16px; padding: 14px; margin-top: 4px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+  .height-calc label { font-size: 14px; font-weight: 600; }
+  .height-calc .field input { background: #fff; width: 90px; }
+  .height-res { grid-column: 1 / -1; font-size: 14px; color: #4a5568; }
+  .height-res b { color: var(--teal-d); font-size: 18px; }
+  .use-btn { grid-column: 1 / -1; border: 0; border-radius: 14px; padding: 12px; font: inherit; font-weight: 600; color: #fff;
+    background: linear-gradient(135deg, #4a90f7, #1d63d8); cursor: pointer; }
 </style>
 
 </head>
@@ -268,6 +295,34 @@
     Historial
   </button>
 </nav>
+<div class="sheet-bg" id="sheet-bg"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="grab"></div>
+  <div class="sheet-top"><h3 id="sheet-title">Largo de paso</h3><button class="close" id="sheet-close" aria-label="Cerrar">×</button></div>
+
+  <h4>Dónde verlo en Apple Salud</h4>
+  <div class="path">Salud <span>›</span> Explorar <span>›</span> Movilidad <span>›</span> Longitud de los pasos al caminar</div>
+  <p style="margin-top:10px">El iPhone lo mide solo cuando caminas con el teléfono en el bolsillo o cerca de la cadera. Mira el promedio de varias semanas, no un día suelto.</p>
+
+  <h4>Cómo varía</h4>
+  <p>Tu velocidad al caminar depende de dos cosas: cuántos pasos das por minuto y cuánto mide cada paso. Para ir más rápido, el cuerpo aumenta las dos; para ir más lento, las reduce. Por eso la misma persona puede dar pasos de unos 45 cm paseando y de 70 cm o más caminando apurada.</p>
+
+  <h4>Cómo medirlo</h4>
+  <ol>
+    <li>Marca un punto de partida en el suelo.</li>
+    <li>Camina 10 pasos a tu ritmo normal.</li>
+    <li>Mide la distancia en centímetros y divídela por 10.</li>
+  </ol>
+  <p><b>Estatura:</b> como referencia general, el paso es alrededor del 40–45% de la estatura.</p>
+  <div class="height-calc">
+    <label for="in-altura">Tu estatura</label>
+    <div class="field"><input id="in-altura" inputmode="decimal" autocomplete="off" placeholder="—"><span class="unit">cm</span></div>
+    <div class="height-res" id="altura-res">Ingresa tu estatura para ver tu largo de paso aproximado.</div>
+    <button type="button" id="altura-usar" class="use-btn" hidden></button>
+  </div>
+
+  <div class="tip">Si siempre caminas a una velocidad parecida, usa el largo de paso de esa velocidad. Si cambias mucho de ritmo, los pasos calculados serán una aproximación.</div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -278,7 +333,7 @@ const FIELDS = {
   calorias:    { label: "Calorías totales", unit: "kcal", group: "walk", dec: 0 },
   inclinacion: { label: "Inclinación",      unit: "%",    group: "walk", dec: 1, hint: "0 si fue plana", def: 0, cintaOnly: true },
   peso:        { label: "Peso",             unit: "kg",   group: "me",   dec: 2, def: 86.15 },
-  zancada:     { label: "Largo de paso",    unit: "cm",   group: "me",   dec: 0, def: 58, hint: "Apple Salud: ~55–60 cm a 4 km/h" },
+  zancada:     { label: "Largo de paso",    unit: "cm",   group: "me",   dec: 0, def: 58, hint: "Distancia de un paso, de talón a talón", info: true },
 };
 const SAVED = ["peso", "zancada"];
 // Ritmo subjetivo en la calle → km/h aproximados
@@ -317,7 +372,7 @@ for (const [key, f] of Object.entries(FIELDS)) {
   const row = document.createElement("div");
   row.className = "row"; row.id = "row-" + key;
   row.innerHTML = `
-    <label for="in-${key}">${f.label}${f.hint ? `<small>${f.hint}</small>` : ""}</label>
+    <label for="in-${key}">${f.label}${f.info ? ` <button type="button" class="info-btn" aria-label="Más información">i</button>` : ""}${f.hint ? `<small>${f.hint}</small>` : ""}</label>
     <div class="field">
       <input id="in-${key}" inputmode="decimal" autocomplete="off" placeholder="—">
       <span class="unit">${f.unit}</span>
@@ -646,6 +701,39 @@ function showView(name) {
   window.scrollTo(0, 0);
 }
 document.querySelectorAll(".tabbar button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
+
+// ---------- Bottom sheet ----------
+const sheet = document.getElementById("sheet"), sheetBg = document.getElementById("sheet-bg");
+function openSheet() { sheetBg.classList.add("open"); sheet.classList.add("open"); sheet.scrollTop = 0; document.body.style.overflow = "hidden"; }
+function closeSheet() { sheetBg.classList.remove("open"); sheet.classList.remove("open"); document.body.style.overflow = ""; }
+document.querySelectorAll(".info-btn").forEach(b => b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); openSheet(); }));
+sheetBg.addEventListener("click", closeSheet);
+document.getElementById("sheet-close").addEventListener("click", closeSheet);
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+let y0 = null;
+sheet.addEventListener("touchstart", e => { y0 = sheet.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
+sheet.addEventListener("touchmove", e => { if (y0 != null && e.touches[0].clientY - y0 > 70) { y0 = null; closeSheet(); } }, { passive: true });
+
+// Estatura → largo de paso aproximado
+const alturaIn = document.getElementById("in-altura"), alturaRes = document.getElementById("altura-res"), alturaUsar = document.getElementById("altura-usar");
+function calcAltura() {
+  const h = num(alturaIn.value);
+  if (!h || h < 100 || h > 230) {
+    alturaRes.textContent = h ? "Ingresa la estatura en centímetros (por ejemplo, 162)." : "Ingresa tu estatura para ver tu largo de paso aproximado.";
+    alturaUsar.hidden = true; return;
+  }
+  const lo = h * 0.40, hi = h * 0.45, mid = Math.round(h * 0.425);
+  alturaRes.innerHTML = `Largo de paso aproximado: <b>${fmt(lo, 0)}–${fmt(hi, 0)} cm</b>`;
+  alturaUsar.textContent = `Usar ${mid} cm`; alturaUsar.dataset.v = mid; alturaUsar.hidden = false;
+  try { store.altura = h; localStorage.setItem("caminata-mis-datos", JSON.stringify(store)); } catch (e) {}
+}
+if (store.altura) alturaIn.value = fmt(store.altura, 0);
+alturaIn.addEventListener("input", calcAltura);
+calcAltura();
+alturaUsar.addEventListener("click", () => {
+  const z = inputs.zancada; z.value = alturaUsar.dataset.v; z.dispatchEvent(new Event("input"));
+  closeSheet(); toast(`Largo de paso: ${alturaUsar.dataset.v} cm`);
+});
 
 setMode(mode);
 </script>
