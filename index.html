@@ -22,7 +22,7 @@
 <meta name="theme-color" content="#eaf1fb">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --ink: #1b2433; --muted: #8a94a6; --teal: #2f7cf6; --teal-d: #1d63d8; --teal-l: #dbe7fb;
@@ -34,7 +34,7 @@
   html { background: #eaf1fb; }
   body {
     margin: 0; min-height: 100vh; color: var(--ink); position: relative; overflow-x: hidden;
-    font: 15px/1.4 "Poppins", -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+    font: 15px/1.4 "Barlow", -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased;
     background: linear-gradient(160deg, #f4f8fe 0%, #e9f0fb 45%, #dde8f8 100%);
   }
   .blob { position: fixed; border-radius: 50%; z-index: 0; pointer-events: none; }
@@ -168,7 +168,7 @@
   .entry-vals b { display: block; font-size: 14px; font-variant-numeric: tabular-nums; }
   .entry-vals small { font-size: 10px; color: var(--muted); }
   .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 13px; }
-  .row input[type=date] { font: inherit; font-size: 15px; font-weight: 600; color: var(--ink); background: #f1f5fc; border: 0; border-radius: 12px; padding: 7px 10px; }
+  .row input[type=date] { min-width: 150px; text-align: right; font: inherit; font-size: 15px; font-weight: 600; color: var(--ink); background: #f1f5fc; border: 0; border-radius: 12px; padding: 7px 10px; }
 
   .info-btn { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--teal); background: #fff; color: var(--teal-d);
     font: 700 12px/1 Georgia, serif; font-style: italic; display: inline-grid; place-items: center; padding: 0; margin-left: 4px; vertical-align: 1px; cursor: pointer; }
@@ -228,6 +228,16 @@
   .speed-head { align-items: center; }
   .speed-field input { width: 76px; }
   .speed-field.calc input { color: #1d63d8; background: #d7e6fd; }
+  .calc-warn { margin: 10px 4px 0; padding: 10px 14px; border-radius: 14px; background: #fff7dc; color: #8a6200;
+    font-size: 13px; line-height: 1.35; display: flex; flex-direction: column; gap: 4px; position: relative; }
+  .calc-warn[hidden] { display: none; }
+  .row.need > label small { color: #c2412a; }
+  .speed.unset input[type=range] { background: linear-gradient(to right, #b9d3fb 0%, #b9d3fb var(--p, 37%), #e6eefb var(--p, 37%), #e6eefb 100%); }
+  .speed.unset input[type=range]::-webkit-slider-thumb { border-color: #b9d3fb; box-shadow: 0 2px 6px rgba(45,95,190,.15); }
+  .speed.unset input[type=range]::-moz-range-thumb { border-color: #b9d3fb; }
+  .inline-warn { margin: 0 14px 14px; padding: 10px 12px; border-radius: 12px; background: #fff7dc; color: #8a6200; font-size: 13px; line-height: 1.35; }
+  .inline-warn[hidden] { display: none; }
+  #row-zancada:has(+ .inline-warn:not([hidden])) { border-bottom: 0; }
 </style>
 
 </head>
@@ -283,6 +293,7 @@
   </div>
   <p class="calc-hint">Ingresa al menos dos datos de la caminata para calcular el resto.</p>
   <p class="calc-error" id="calc-error" role="alert" hidden></p>
+  <p class="calc-warn" id="calc-warn" role="status" hidden></p>
   <div class="actions" style="margin-top:10px">
     <button id="clear">Limpiar</button>
     <button id="copy" disabled>Copiar resumen</button>
@@ -375,10 +386,11 @@ const FIELDS = {
   pasos:       { label: "Pasos",            unit: "",     group: "walk", dec: 0 },
   calorias:    { label: "Calorías totales", unit: "kcal", group: "walk", dec: 0 },
   inclinacion: { label: "Inclinación",      unit: "%",    group: "walk", dec: 1, hint: "0 si fue plana", def: 0, cintaOnly: true },
-  peso:        { label: "Peso",             unit: "kg",   group: "me",   dec: 2, def: 86.15 },
-  zancada:     { label: "Largo de paso",    unit: "cm",   group: "me",   dec: 0, def: 58, hint: "Distancia de un paso, de talón a talón", info: true },
+  peso:        { label: "Peso",             unit: "kg",   group: "me",   dec: 2, def: 86.15, hint: "Ingresa tu peso para calcular las calorías" },
+  zancada:     { label: "Largo de paso",    unit: "cm",   group: "me",   dec: 0, def: 58, hint: "Ingresa tu largo de paso para calcular los pasos", info: true },
 };
 const SAVED = ["peso", "zancada"];
+const PASO_MIN = 40, PASO_MAX = 90;   // rango habitual del largo de paso al caminar (cm)
 // Ritmo subjetivo en la calle → km/h aproximados
 const PACES = [
   { name: "Paseo",      sub: "3",   kmh: 3.0 },
@@ -432,6 +444,7 @@ for (const [key, f] of Object.entries(FIELDS)) {
   }
   el.addEventListener("input", () => {
     el.dataset.user = el.value.trim() === "" ? "" : "1";
+    if ((key === "peso" || key === "zancada") && num(el.value)) setNeed(key, false);
     row.classList.remove("calc");
     if (SAVED.includes(key)) {
       const n = num(el.value);
@@ -490,6 +503,7 @@ function renderSpeed(calcValue) {
     wrap.classList.remove("calc");
     if (!typing) val.value = "";
   }
+  document.getElementById("speed").classList.toggle("unset", speedUser == null);
   [...chips.children].forEach((b, i) => b.classList.toggle("on", speedUser === PACES[i].kmh));
   document.getElementById("clear-speed").hidden = speedUser == null;
   if (typeof updateButtons === "function" && inputs.tiempo) updateButtons();
@@ -522,7 +536,7 @@ function clearCalc() {
     if (!el.dataset.user && FIELDS[key].group === "walk") { el.value = ""; el.closest(".row").classList.remove("calc"); }
   }
   document.getElementById("notes").innerHTML = "";
-  if (document.getElementById("calc-error")) showError([]);
+  if (document.getElementById("calc-error")) { showError([]); showWarn([]); }
   lastResult = {}; renderHero({});
   renderSpeed();
 }
@@ -567,31 +581,35 @@ function solve() {
   renderSpeed(given.velocidad == null ? k.velocidad : null);
 
   // Avisos
-  const errors = [];
-  const missing = ["tiempo", "distancia", "pasos", "calorias"].filter(x => k[x] == null);
+  const errors = [], warns = [];
+  const missing = ["tiempo", "distancia", "pasos", "calorias"].filter(x => k[x] == null && !(x === "calorias" && !k.peso) && !(x === "pasos" && !k.zancada));
+  setNeed("zancada", !k.zancada);
+
+  document.getElementById("row-peso").classList.toggle("need", !k.peso);
   if (missing.length === 4 && k.velocidad == null)
     errors.push(`Faltan datos. Ingresa al menos dos: por ejemplo, tiempo y velocidad, o tiempo y distancia.`);
   else if (missing.length)
     errors.push(`No alcanzó para calcular: ${missing.map(x => FIELDS[x].label.toLowerCase()).join(", ")}. Agrega otro dato.`);
 
-  if (given.distancia != null && given.velocidad != null && given.tiempo) {
-    const exp = given.velocidad * given.tiempo / 60;
-    if (Math.abs(exp - given.distancia) / given.distancia > 0.08)
-      errors.push(`Distancia, velocidad y tiempo no calzan entre sí (con esa velocidad y ese tiempo serían ${fmt(exp, 2)} km). Revisa uno de los tres.`);
-  }
   if (given.calorias != null && k.velocidad != null && k.tiempo != null && k.peso && (given.velocidad != null || given.distancia != null)) {
     const est = kcalPerMin(k.velocidad, k.peso, g) * k.tiempo;
     notes.push(`<p>Según la fórmula, el gasto total habría sido de ~${fmt(est, 0)} kcal.</p>`);
   }
   if (given.pasos && k.distancia && (given.distancia != null || given.velocidad != null)) {
     const pasoReal = k.distancia * 100000 / given.pasos;
-    notes.push(`<p>Tu largo de paso en esta caminata fue de <b>${fmt(pasoReal, 0)} cm</b>. Si quieres, úsalo en “Mis datos”.</p>`);
+    if (pasoReal < PASO_MIN || pasoReal > PASO_MAX)
+      warns.push(`Con esos pasos y esa distancia tu paso sería de ${fmt(pasoReal, 0)} cm, fuera del rango habitual (${PASO_MIN}–${PASO_MAX} cm). Revisa los pasos o la distancia.`);
+    else if (k.zancada && Math.abs(pasoReal - k.zancada) / k.zancada > 0.2)
+      warns.push(`En esta caminata tu paso fue de ${fmt(pasoReal, 0)} cm, pero en “Mis datos” tienes ${fmt(k.zancada, 0)} cm. Revisa tu largo de paso.`);
+    else
+      notes.push(`<p>Tu largo de paso en esta caminata fue de <b>${fmt(pasoReal, 0)} cm</b>. Si quieres, úsalo en “Mis datos”.</p>`);
   }
   if (mode === "calle" && given.velocidad != null)
     notes.push(`<p>El ritmo de la calle es una estimación, así que los resultados también lo son.</p>`);
   notes.push(`<p>Las calorías son el gasto total durante la caminata (fórmula de caminata del ACSM: velocidad, inclinación y peso).</p>`);
   document.getElementById("notes").innerHTML = notes.join("");
   showError(errors);
+  showWarn(warns);
   lastResult = k;
   renderHero(k);
   updateButtons();
@@ -601,14 +619,24 @@ function showError(list) {
   el.innerHTML = list.map(t => `<span>${t}</span>`).join("");
   el.hidden = !list.length;
 }
+function setNeed(key, on) {
+  const row = document.getElementById("row-" + key), sm = row.querySelector("label small"), f = FIELDS[key];
+  row.classList.toggle("need", on);
+}
+function showWarn(list) {
+  const el = document.getElementById("calc-warn");
+  el.innerHTML = list.map(t => `<span>${t}</span>`).join("");
+  el.hidden = !list.length;
+}
 function updateButtons() {
   const walkKeys = ["tiempo", "distancia", "pasos", "calorias"];
-  const hasData = speedUser != null || walkKeys.some(k => inputs[k].dataset.user && num(inputs[k].value) != null);
+  const count = (speedUser != null ? 1 : 0) + walkKeys.filter(k => inputs[k].dataset.user && num(inputs[k].value) != null).length;
+  const hasData = count >= 2;
   document.getElementById("calc").disabled = !hasData;
   const hasResult = ["distancia", "pasos"].some(k => lastResult[k] != null);
   document.getElementById("save").disabled = !hasResult;
   document.getElementById("copy").disabled = !hasResult;
-  if (!hasData) showError([]);
+  if (!hasData) { showError([]); showWarn([]); }
 }
 document.addEventListener("input", () => updateButtons());
 function renderHero(k) {
@@ -634,7 +662,7 @@ document.getElementById("clear").addEventListener("click", () => {
   }
   speedUser = null; lastResult = {}; renderHero({});
   document.getElementById("notes").innerHTML = "";
-  showError([]);
+  showError([]); showWarn([]);
   fechaIn.value = hoy();
   renderSpeed();
 });
@@ -826,6 +854,20 @@ document.addEventListener("input", e => {
   if (i > -1) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/[,.]/g, "");
   if (v !== el.value) el.value = v;
 }, true);
+
+// Aviso de largo de paso fuera de rango (dentro de la tarjeta, al salir del campo)
+const pasoWarn = document.createElement("div");
+pasoWarn.className = "inline-warn"; pasoWarn.hidden = true;
+document.getElementById("row-zancada").after(pasoWarn);
+function checkPaso() {
+  const z = num(inputs.zancada.value);
+  const bad = z != null && z > 0 && (z < PASO_MIN || z > PASO_MAX);
+  pasoWarn.textContent = bad ? `Tu largo de paso (${fmt(z, 0)} cm) está fuera del rango habitual al caminar (${PASO_MIN}–${PASO_MAX} cm).` : "";
+  pasoWarn.hidden = !bad;
+}
+inputs.zancada.addEventListener("change", checkPaso);
+inputs.zancada.addEventListener("blur", checkPaso);
+inputs.zancada.addEventListener("input", () => { if (!pasoWarn.hidden) checkPaso(); });
 
 setMode(mode);
 </script>
