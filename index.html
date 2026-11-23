@@ -95,13 +95,13 @@
   .field input:focus { outline: none; border-color: var(--teal); background: #fff; }
   .field input::placeholder { color: var(--muted); font-weight: 400; opacity: .7; }
   .field .unit { width: 36px; color: var(--muted); font-size: 12px; }
-  .row.calc .field input { color: #fff; background: var(--teal); }
+  .row.calc .field input { color: #1d63d8; background: #d7e6fd; }
 
   .speed { display: block; padding: 16px 18px; border-bottom: 1px solid var(--line); }
   .speed-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
   #speed-label { font-size: 14px; font-weight: 600; }
   .speed-head .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .speed-head .val.calc { color: var(--teal-d); }
+  .speed-head .val.calc { color: #4a90f7; }
   .speed-head .val .u { font-size: 12px; color: var(--muted); font-weight: 400; }
   .stepper { display: flex; align-items: center; gap: 12px; }
   .stepper button { width: 40px; height: 40px; border: 1px solid var(--stroke); border-radius: 50%; background: var(--glass-strong);
@@ -144,7 +144,16 @@
     display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px; border-radius: 18px; cursor: pointer; }
   .tabbar button svg { width: 22px; height: 22px; }
   .tabbar button.on { color: var(--teal-d); background: #eef4fe; }
-  .actions button.secondary { background: #fff; color: var(--teal-d); border: 1.5px solid var(--teal); }
+  .actions button.secondary {
+    position: relative; display: flex; align-items: center; justify-content: center; gap: 8px;
+    color: var(--teal-d); border: 1px solid transparent; border-radius: 20px; padding: 16px;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.75), rgba(225,236,253,.55)) padding-box,
+      linear-gradient(135deg, rgba(255,255,255,.95), rgba(74,144,247,.55) 55%, rgba(255,255,255,.9)) border-box;
+    backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
+    box-shadow: 0 10px 26px rgba(45,95,190,.16), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -8px 16px rgba(74,144,247,.08);
+    overflow: hidden; }
+  .actions button.secondary svg { width: 20px; height: 20px; flex: none; }
   .week { padding: 14px; }
   .hist-head { display: flex; justify-content: space-between; }
   #hist-count { color: var(--muted); font-weight: 500; text-transform: none; letter-spacing: 0; }
@@ -187,6 +196,38 @@
   .height-res b { color: var(--teal-d); font-size: 18px; }
   .use-btn { grid-column: 1 / -1; border: 0; border-radius: 14px; padding: 12px; font: inherit; font-weight: 600; color: #fff;
     background: linear-gradient(135deg, #4a90f7, #1d63d8); cursor: pointer; }
+
+  /* Mensaje de error bajo Calcular */
+  .calc-error { margin: 10px 4px 0; padding: 10px 14px; border-radius: 14px; background: #fdecea; color: #b3402a;
+    font-size: 13px; line-height: 1.35; display: flex; flex-direction: column; gap: 4px; animation: shake .35s; }
+  .calc-error[hidden] { display: none; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+  /* Microinteracciones */
+  button { transition: transform .12s ease, background-color .15s ease, box-shadow .15s ease, filter .15s ease, opacity .15s ease, color .15s ease; touch-action: manipulation; }
+  button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  @media (hover: hover) {
+    .actions button:not(.primary):not(.secondary):not(:disabled):hover { background: #fff; box-shadow: 0 8px 20px rgba(45,95,190,.14); }
+    .actions button.primary:not(:disabled):hover { filter: brightness(1.07); box-shadow: 0 14px 28px rgba(45,95,190,.38); }
+    .actions button.secondary:not(:disabled):hover { box-shadow: 0 14px 30px rgba(45,95,190,.24), inset 0 1px 0 rgba(255,255,255,.9); }
+    .segmented button:not(.on):hover, .chips button:not(.on):hover { background: rgba(255,255,255,.9); color: var(--ink); }
+    .stepper button:hover, .close:hover, .info-btn:hover { background: #eef4fe; }
+    .tabbar button:not(.on):hover { color: var(--ink); background: rgba(238,244,254,.6); }
+    .use-btn:hover { filter: brightness(1.07); }
+    .entry-del:hover { background: #f1f5fc; }
+  }
+  .actions button:not(:disabled):active, .segmented button:active, .chips button:active, .stepper button:active,
+  .tabbar button:active, .use-btn:active, .close:active, .info-btn:active, .entry-del:active { transform: scale(.96); }
+  .actions button.primary:not(:disabled):active { filter: brightness(.94); box-shadow: 0 4px 10px rgba(45,95,190,.3); }
+  .actions button.secondary:not(:disabled):active { box-shadow: 0 4px 12px rgba(45,95,190,.18), inset 0 2px 6px rgba(74,144,247,.15); }
+  .actions button:not(.primary):not(.secondary):not(:disabled):active { background: #eef3fb; }
+  .actions button:disabled { cursor: not-allowed; opacity: .55; box-shadow: none; }
+  .actions button.primary:disabled { background: #a8c5f6; color: #fff; opacity: 1; box-shadow: none; }
+  .calc-hint { margin: 8px 6px 0; font-size: 12px; color: var(--muted); text-align: center; }
+  .actions button.secondary:disabled { color: #8fb2ee; opacity: 1; box-shadow: inset 0 1px 0 rgba(255,255,255,.9); }
+  .speed-head { align-items: center; }
+  .speed-field input { width: 76px; }
+  .speed-field.calc input { color: #1d63d8; background: #d7e6fd; }
 </style>
 
 </head>
@@ -213,7 +254,7 @@
     <div class="speed" id="speed">
       <div class="speed-head">
         <span id="speed-label">Velocidad</span>
-        <span class="val" id="speed-val">—</span>
+        <div class="field speed-field" id="speed-field"><input id="speed-in" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Velocidad en km/h"><span class="unit">km/h</span></div>
       </div>
       <div id="speed-cinta">
         <div class="stepper">
@@ -231,18 +272,20 @@
   </div>
   <div class="legend">
     <span><span class="dot" style="background:#fff;border:1px solid var(--teal)"></span>Ingresado</span>
-    <span><span class="dot" style="background:var(--teal)"></span>Calculado</span>
+    <span><span class="dot" style="background:#d7e6fd;border:1px solid #9cc0f8"></span>Calculado</span>
   </div>
 
   <h2>Mis datos</h2>
   <div class="glass card" id="me"></div>
 
   <div class="actions">
-    <button id="calc" class="primary">Calcular</button>
+    <button id="calc" class="primary" disabled>Calcular</button>
   </div>
+  <p class="calc-hint">Ingresa al menos dos datos de la caminata para calcular el resto.</p>
+  <p class="calc-error" id="calc-error" role="alert" hidden></p>
   <div class="actions" style="margin-top:10px">
     <button id="clear">Limpiar</button>
-    <button id="copy">Copiar resumen</button>
+    <button id="copy" disabled>Copiar resumen</button>
   </div>
 
   <h2>Resumen</h2>
@@ -264,7 +307,7 @@
     </div>
   </section>
   <div class="actions" style="margin-top:14px">
-    <button id="save" class="secondary">Guardar en historial</button>
+    <button id="save" class="secondary" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/><path d="M12 7v6M9 10h6"/></svg>Guardar en historial</button>
   </div>
   <div class="notes" id="notes"></div>
   </div>
@@ -419,21 +462,37 @@ range.addEventListener("input", () => setCinta(parseFloat(range.value)));
 document.getElementById("minus").addEventListener("click", () => setCinta((speedUser ?? parseFloat(range.value)) - 0.1));
 document.getElementById("plus").addEventListener("click", () => setCinta((speedUser ?? parseFloat(range.value)) + 0.1));
 document.getElementById("clear-speed").addEventListener("click", () => { speedUser = null; renderSpeed(); });
+// Velocidad escrita a mano
+const speedIn = document.getElementById("speed-in");
+speedIn.addEventListener("input", () => {
+  const n = num(speedIn.value);
+  speedUser = n && n > 0 ? n : null;
+  if (speedUser != null && mode === "cinta") { range.value = Math.min(9, Math.max(1, speedUser)); paintRange(); }
+  renderSpeed();
+});
+speedIn.addEventListener("change", () => {
+  if (speedUser == null) { renderSpeed(); return; }
+  if (mode === "cinta") setCinta(speedUser);   // ajusta al rango 1–9 de la caminadora
+  else { speedUser = Math.min(9, Math.max(0.5, Math.round(speedUser * 10) / 10)); renderSpeed(); }
+});
 
 function renderSpeed(calcValue) {
-  const val = document.getElementById("speed-val");
+  const val = document.getElementById("speed-in"), wrap = document.getElementById("speed-field");
+  const typing = document.activeElement === val;
   if (speedUser != null) {
-    val.className = "val";
-    val.innerHTML = `${fmt(speedUser, 1)} <span class="u">km/h</span>`;
+    wrap.classList.remove("calc");
+    if (!typing) val.value = fmt(speedUser, 1);
   } else if (calcValue != null) {
-    val.className = "val calc";
-    val.innerHTML = `${fmt(calcValue, 1)} <span class="u">km/h</span>`;
+    wrap.classList.add("calc");
+    val.value = fmt(calcValue, 1);
     range.value = Math.min(9, Math.max(1, calcValue)); paintRange();
   } else {
-    val.className = "val"; val.textContent = "—";
+    wrap.classList.remove("calc");
+    if (!typing) val.value = "";
   }
   [...chips.children].forEach((b, i) => b.classList.toggle("on", speedUser === PACES[i].kmh));
   document.getElementById("clear-speed").hidden = speedUser == null;
+  if (typeof updateButtons === "function" && inputs.tiempo) updateButtons();
 }
 
 function setMode(m) {
@@ -463,6 +522,8 @@ function clearCalc() {
     if (!el.dataset.user && FIELDS[key].group === "walk") { el.value = ""; el.closest(".row").classList.remove("calc"); }
   }
   document.getElementById("notes").innerHTML = "";
+  if (document.getElementById("calc-error")) showError([]);
+  lastResult = {}; renderHero({});
   renderSpeed();
 }
 
@@ -506,16 +567,17 @@ function solve() {
   renderSpeed(given.velocidad == null ? k.velocidad : null);
 
   // Avisos
+  const errors = [];
   const missing = ["tiempo", "distancia", "pasos", "calorias"].filter(x => k[x] == null);
   if (missing.length === 4 && k.velocidad == null)
-    notes.push(`<p class="warn">Faltan datos. Ingresa al menos dos: por ejemplo, tiempo y velocidad, o tiempo y distancia.</p>`);
+    errors.push(`Faltan datos. Ingresa al menos dos: por ejemplo, tiempo y velocidad, o tiempo y distancia.`);
   else if (missing.length)
-    notes.push(`<p class="warn">No alcanzó para calcular: ${missing.map(x => FIELDS[x].label.toLowerCase()).join(", ")}. Agrega otro dato.</p>`);
+    errors.push(`No alcanzó para calcular: ${missing.map(x => FIELDS[x].label.toLowerCase()).join(", ")}. Agrega otro dato.`);
 
   if (given.distancia != null && given.velocidad != null && given.tiempo) {
     const exp = given.velocidad * given.tiempo / 60;
     if (Math.abs(exp - given.distancia) / given.distancia > 0.08)
-      notes.push(`<p class="warn">Distancia, velocidad y tiempo no calzan entre sí (con esa velocidad y ese tiempo serían ${fmt(exp, 2)} km). Revisa uno de los tres.</p>`);
+      errors.push(`Distancia, velocidad y tiempo no calzan entre sí (con esa velocidad y ese tiempo serían ${fmt(exp, 2)} km). Revisa uno de los tres.`);
   }
   if (given.calorias != null && k.velocidad != null && k.tiempo != null && k.peso && (given.velocidad != null || given.distancia != null)) {
     const est = kcalPerMin(k.velocidad, k.peso, g) * k.tiempo;
@@ -529,9 +591,26 @@ function solve() {
     notes.push(`<p>El ritmo de la calle es una estimación, así que los resultados también lo son.</p>`);
   notes.push(`<p>Las calorías son el gasto total durante la caminata (fórmula de caminata del ACSM: velocidad, inclinación y peso).</p>`);
   document.getElementById("notes").innerHTML = notes.join("");
+  showError(errors);
   lastResult = k;
   renderHero(k);
+  updateButtons();
 }
+function showError(list) {
+  const el = document.getElementById("calc-error");
+  el.innerHTML = list.map(t => `<span>${t}</span>`).join("");
+  el.hidden = !list.length;
+}
+function updateButtons() {
+  const walkKeys = ["tiempo", "distancia", "pasos", "calorias"];
+  const hasData = speedUser != null || walkKeys.some(k => inputs[k].dataset.user && num(inputs[k].value) != null);
+  document.getElementById("calc").disabled = !hasData;
+  const hasResult = ["distancia", "pasos"].some(k => lastResult[k] != null);
+  document.getElementById("save").disabled = !hasResult;
+  document.getElementById("copy").disabled = !hasResult;
+  if (!hasData) showError([]);
+}
+document.addEventListener("input", () => updateButtons());
 function renderHero(k) {
   const set = (id, v) => document.getElementById(id).textContent = v;
   set("h-pasos", k.pasos != null ? fmt(k.pasos, 0) : "—");
@@ -555,6 +634,8 @@ document.getElementById("clear").addEventListener("click", () => {
   }
   speedUser = null; lastResult = {}; renderHero({});
   document.getElementById("notes").innerHTML = "";
+  showError([]);
+  fechaIn.value = hoy();
   renderSpeed();
 });
 
@@ -734,6 +815,17 @@ alturaUsar.addEventListener("click", () => {
   const z = inputs.zancada; z.value = alturaUsar.dataset.v; z.dispatchEvent(new Event("input"));
   closeSheet(); toast(`Largo de paso: ${alturaUsar.dataset.v} cm`);
 });
+
+// ---------- Solo números ----------
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (!(el instanceof HTMLInputElement) || el.type === "range" || el.type === "date" || el.type === "file") return;
+  let v = el.value.replace(/[^0-9.,]/g, "");
+  // un solo separador decimal (coma); los puntos se aceptan como miles
+  const i = v.indexOf(",");
+  if (i > -1) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/[,.]/g, "");
+  if (v !== el.value) el.value = v;
+}, true);
 
 setMode(mode);
 </script>
